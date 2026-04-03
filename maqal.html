@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>مقال — الزمالك FC</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.back-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  color:var(--blue);text-decoration:none;font-weight:700;font-size:.9rem;
+  background:var(--card);border:1.5px solid var(--border);
+  padding:9px 18px;border-radius:9px;transition:.2s;margin-bottom:28px;
+}
+.back-btn:hover{background:var(--blue);color:white;border-color:var(--blue);}
+.article-card-sm{
+  background:var(--card);border:1.5px solid var(--border);border-radius:14px;
+  overflow:hidden;text-decoration:none;color:inherit;display:block;transition:.2s;
+}
+.article-card-sm:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.article-card-sm-img{width:100%;height:140px;object-fit:cover;display:block;}
+.article-card-sm-ph{width:100%;height:140px;background:linear-gradient(135deg,var(--blue-deep),#1a5090);display:flex;align-items:center;justify-content:center;font-size:3rem;}
+.article-card-sm-body{padding:14px;}
+.article-card-sm-title{font-size:.88rem;font-weight:700;line-height:1.35;margin-bottom:6px;}
+.article-card-sm-date{font-size:.73rem;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div id="navbar-mount"></div>
+<div class="ticker-wrap" id="ticker-wrap"><div class="ticker-track" id="ticker-track"></div></div>
+
+<!-- ARTICLE CONTENT -->
+<div id="article-mount">
+  <div style="text-align:center;padding:80px 24px;color:var(--muted);">
+    <div style="font-size:3rem;">⏳</div>
+    <p style="margin-top:12px;">جاري تحميل المقال...</p>
+  </div>
+</div>
+
+<div id="footer-mount"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navbar-mount').innerHTML = renderNavbar('news');
+  document.getElementById('footer-mount').innerHTML = renderFooterHTML();
+
+  const params = new URLSearchParams(location.search);
+  const slug   = params.get('slug');
+
+  if (!slug) {
+    showNotFound();
+    return;
+  }
+
+  const article = DB.getArticleBySlug(slug);
+
+  if (!article) {
+    showNotFound();
+    return;
+  }
+
+  // Update page title
+  document.title = article.title + ' — الزمالك FC';
+
+  // Related articles
+  const related = DB.getArticles().filter(a => a.slug !== article.slug && a.cat === article.cat).slice(0, 3);
+  const allRelated = related.length ? related : DB.getArticles().filter(a => a.slug !== article.slug).slice(0, 3);
+
+  const tagsHTML = (article.tags || []).map(t => `<span>${t}</span>`).join('');
+
+  const relatedHTML = allRelated.length ? `
+    <div style="margin-top:52px;">
+      <h2 style="font-family:Oswald,sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:2px;display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <span style="width:4px;height:26px;background:linear-gradient(to bottom,var(--gold),var(--blue));border-radius:4px;display:block;"></span>
+        مقالات ذات صلة
+      </h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+        ${allRelated.map(a => `
+          <a class="article-card-sm" href="maqal.html?slug=${encodeURIComponent(a.slug)}">
+            ${a.imageData
+              ? `<img class="article-card-sm-img" src="${a.imageData}" alt="${a.title}">`
+              : `<div class="article-card-sm-ph">${a.emoji}</div>`}
+            <div class="article-card-sm-body">
+              <div class="article-card-sm-title">${a.title}</div>
+              <div class="article-card-sm-date">📅 ${a.date}</div>
+            </div>
+          </a>`).join('')}
+      </div>
+    </div>` : '';
+
+  document.getElementById('article-mount').innerHTML = `
+    <div class="breadcrumb">
+      <a href="index.html">الرئيسية</a>
+      <span class="sep">›</span>
+      <a href="akhbar-wamaqalat.html">الأخبار والمقالات</a>
+      <span class="sep">›</span>
+      <span>${article.cat}</span>
+    </div>
+
+    <div class="article-wrap">
+      <a href="akhbar-wamaqalat.html" class="back-btn">→ العودة للأخبار</a>
+
+      ${article.imageData
+        ? `<img class="article-hero-img" src="${article.imageData}" alt="${article.title}">`
+        : `<div class="article-hero-placeholder">${article.emoji}</div>`}
+
+      <span class="news-cat">${article.cat}</span>
+
+      <h1 class="article-title" style="margin-top:12px;">${article.title}</h1>
+
+      <div class="article-meta-bar">
+        <span>📅 ${article.date}</span>
+        <span>✍️ ${article.author}</span>
+        <span>🏷 ${article.cat}</span>
+      </div>
+
+      <div class="article-body">
+        ${article.content}
+      </div>
+
+      ${tagsHTML ? `<div class="article-tags">${tagsHTML}</div>` : ''}
+
+      <div class="article-share">
+        <span>شارك المقال:</span>
+        <button class="share-btn share-copy" onclick="copyLink()">🔗 نسخ الرابط</button>
+        <button class="share-btn" style="background:var(--blue);color:white;" onclick="shareWhatsApp()">📱 واتساب</button>
+      </div>
+
+      ${relatedHTML}
+    </div>`;
+});
+
+function showNotFound() {
+  document.getElementById('article-mount').innerHTML = `
+    <div style="text-align:center;padding:80px 24px;">
+      <div style="font-size:4rem;">😔</div>
+      <h2 style="margin:16px 0 8px;font-size:1.4rem;">المقال غير موجود</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">ربما تم حذف هذا المقال أو الرابط غير صحيح</p>
+      <a href="akhbar-wamaqalat.html" style="display:inline-block;background:var(--blue);color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;">
+        العودة للأخبار
+      </a>
+    </div>`;
+}
+
+function copyLink() {
+  navigator.clipboard?.writeText(location.href)
+    .then(() => showAlert('✅ تم نسخ الرابط!','ok'))
+    .catch(() => showAlert('❌ تعذر النسخ','err'));
+}
+
+function shareWhatsApp() {
+  const url = encodeURIComponent(location.href);
+  const title = encodeURIComponent(document.title);
+  window.open(`https://wa.me/?text=${title}%20${url}`, '_blank');
+}
+</script>
+</body>
+</html>

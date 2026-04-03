@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>مواعيد المباريات — الزمالك FC</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="navbar-mount"></div>
+
+<div class="ticker-wrap" id="ticker-wrap">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="page-banner">
+  <h1>مواعيد <span>المباريات</span></h1>
+  <p>جدول مباريات نادي الزمالك في كل البطولات</p>
+</div>
+
+<div class="breadcrumb">
+  <a href="index.html">الرئيسية</a>
+  <span class="sep">›</span>
+  <span>مواعيد المباريات</span>
+</div>
+
+<div style="padding:0 24px 0;" id="ad-top-mount"></div>
+
+<div class="section">
+
+  <!-- FILTER -->
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterMatches('all', this)">📋 الكل</button>
+    <button class="filter-btn" onclick="filterMatches('upcoming', this)">⏳ القادمة</button>
+    <button class="filter-btn" onclick="filterMatches('done', this)">✅ المنتهية</button>
+  </div>
+
+  <!-- STATS ROW -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px;" id="stats-row"></div>
+
+  <!-- GRID -->
+  <div class="matches-grid" id="matches-grid"></div>
+
+</div>
+
+<div id="footer-mount"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+let allMatches = [];
+let currentFilter = 'all';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navbar-mount').innerHTML = renderNavbar('matches');
+  document.getElementById('footer-mount').innerHTML = renderFooterHTML();
+  document.getElementById('ad-top-mount').innerHTML = renderAdZone('أعلى الصفحة');
+
+  allMatches = DB.getMatches();
+  renderStatsRow();
+  renderGrid('all');
+});
+
+function renderStatsRow() {
+  const total    = allMatches.length;
+  const upcoming = allMatches.filter(m => m.status === 'upcoming').length;
+  const done     = allMatches.filter(m => m.status === 'done').length;
+  const wins     = allMatches.filter(m => {
+    if (m.status !== 'done' || !m.score) return false;
+    const [h, a] = m.score.split('-').map(s => parseInt(s.trim()));
+    const zmHome = m.home.includes('الزمالك');
+    return zmHome ? h > a : a > h;
+  }).length;
+
+  const cards = [
+    { num: total,    lbl: 'إجمالي المباريات', icon:'📋' },
+    { num: upcoming, lbl: 'مباريات قادمة',    icon:'⏳' },
+    { num: done,     lbl: 'مباريات منتهية',   icon:'✅' },
+    { num: wins,     lbl: 'انتصارات',          icon:'🏆' },
+  ];
+  document.getElementById('stats-row').innerHTML = cards.map(c => `
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px 28px;text-align:center;box-shadow:var(--shadow);flex:1;min-width:120px;">
+      <div style="font-size:1.6rem;margin-bottom:4px;">${c.icon}</div>
+      <div style="font-family:Oswald,sans-serif;font-size:2rem;color:var(--blue);font-weight:700;">${c.num}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">${c.lbl}</div>
+    </div>`).join('');
+}
+
+function filterMatches(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(status);
+}
+
+function renderGrid(status) {
+  const list = status === 'all' ? allMatches : allMatches.filter(m => m.status === status);
+  const grid = document.getElementById('matches-grid');
+  if (!list.length) { grid.innerHTML = '<p style="color:var(--muted);padding:30px 0;">لا توجد مباريات في هذا التصنيف</p>'; return; }
+  grid.innerHTML = list.map(m => matchCardHTML(m)).join('');
+}
+
+function matchCardHTML(m) {
+  const isZm = n => n.includes('الزمالك');
+  const badgeMap = { upcoming:'badge-upcoming', done:'badge-done', today:'badge-today' };
+  const labelMap = { upcoming:'⏳ قادمة', done:'✅ انتهت', today:'📅 اليوم' };
+  // Result badge for done matches
+  let resultBadge = '';
+  if (m.status === 'done' && m.score) {
+    const [h,a] = m.score.split('-').map(s=>parseInt(s.trim()));
+    const zmHome = isZm(m.home);
+    const zmGoals = zmHome ? h : a;
+    const oppGoals = zmHome ? a : h;
+    if (zmGoals > oppGoals) resultBadge = '<span class="badge badge-win" style="margin-top:6px;">🏆 فوز</span>';
+    else if (zmGoals < oppGoals) resultBadge = '<span class="badge badge-loss" style="margin-top:6px;">❌ خسارة</span>';
+    else resultBadge = '<span class="badge badge-draw" style="margin-top:6px;">🤝 تعادل</span>';
+  }
+  return `
+  <div class="match-card">
+    <div class="match-top">
+      <span class="match-competition">${m.competition}</span>
+      <span class="badge ${badgeMap[m.status]||'badge-upcoming'}">${labelMap[m.status]||m.status}</span>
+    </div>
+    <div class="match-body">
+      <div class="match-team">
+        <span class="match-team-emoji">${m.homeEmoji}</span>
+        <div class="match-team-name ${isZm(m.home)?'zm':''}">${m.home}</div>
+      </div>
+      <div class="match-vs-box">
+        <div class="match-score-box">${m.score||'VS'}</div>
+        <div class="match-time-txt">${m.time}</div>
+        ${resultBadge}
+      </div>
+      <div class="match-team">
+        <span class="match-team-emoji">${m.awayEmoji}</span>
+        <div class="match-team-name ${isZm(m.away)?'zm':''}">${m.away}</div>
+      </div>
+    </div>
+    <div class="match-footer">📅 ${m.date} &nbsp;|&nbsp; 🏟 ${m.competition}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>

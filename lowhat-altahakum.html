@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>لوحة التحكم — الزمالك FC</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1565c0;--blue-dark:#0d3a6e;--blue-deep:#071d38;
+  --gold:#c9a84c;--gold-light:#f0d080;
+  --bg:#f0f4fa;--card:#fff;--card-alt:#e8eef8;--border:#d0daea;
+  --text:#0f1e35;--muted:#6278a0;--red:#e53935;--green:#2e7d32;
+  --shadow:0 4px 20px rgba(13,58,110,.10);--shadow-lg:0 12px 40px rgba(13,58,110,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);direction:rtl;min-height:100vh;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,var(--blue-deep),var(--blue-dark));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:var(--card);border-radius:22px;padding:44px;width:100%;max-width:390px;box-shadow:var(--shadow-lg);animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.login-box .icon{text-align:center;font-size:3.2rem;margin-bottom:14px;}
+.login-box h2{text-align:center;font-size:1.55rem;font-weight:900;margin-bottom:6px;}
+.login-box .sub{text-align:center;color:var(--muted);font-size:.87rem;margin-bottom:28px;}
+.login-box input{width:100%;background:var(--card-alt);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;font-family:'Cairo',sans-serif;font-size:1rem;outline:none;margin-bottom:12px;color:var(--text);transition:.2s;}
+.login-box input:focus{border-color:var(--blue);}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));border:none;border-radius:10px;color:white;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;transition:.2s;}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(21,101,192,.3);}
+.login-err{color:var(--red);font-size:.84rem;text-align:center;margin-top:10px;display:none;}
+.login-hint{text-align:center;color:var(--muted);font-size:.78rem;margin-top:14px;}
+.login-hint strong{color:var(--blue);}
+
+/* DASHBOARD */
+#dashboard{display:none;}
+
+/* DASH HEADER */
+.dash-header{background:linear-gradient(135deg,var(--blue-deep),var(--blue-dark),#1a4e8a);border-bottom:3px solid var(--gold);padding:0 28px;height:66px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.dash-logo{font-family:'Oswald',sans-serif;font-size:1.35rem;font-weight:700;color:white;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+.dash-logo em{color:var(--gold);font-style:normal;}
+.dash-header-btns{display:flex;gap:10px;}
+.dash-header-btn{padding:9px 18px;border-radius:9px;border:none;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:6px;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#1a1200;}
+.btn-gold:hover{transform:scale(1.04);}
+.btn-white{background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.2);}
+.btn-white:hover{background:rgba(255,255,255,.22);}
+
+/* DASH LAYOUT */
+.dash-layout{display:flex;min-height:calc(100vh - 66px);}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--card);border-left:1.5px solid var(--border);padding:20px 0;}
+.sidebar-menu{list-style:none;}
+.sidebar-menu li{margin:2px 12px;}
+.sidebar-menu a,.sidebar-menu button{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:700;font-size:.9rem;transition:.2s;cursor:pointer;border:none;background:none;font-family:'Cairo',sans-serif;width:100%;}
+.sidebar-menu a:hover,.sidebar-menu button:hover{background:var(--card-alt);color:var(--blue);}
+.sidebar-menu a.active,.sidebar-menu button.active{background:rgba(21,101,192,.1);color:var(--blue);border-right:3px solid var(--blue);}
+.sidebar-divider{height:1px;background:var(--border);margin:12px 16px;}
+
+/* MAIN CONTENT */
+.dash-main{flex:1;padding:28px;overflow-y:auto;max-height:calc(100vh - 66px);}
+
+/* PANELS */
+.panel{display:none;animation:fadeUp .3s ease;}
+.panel.active{display:block;}
+
+.panel-header{margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--border);}
+.panel-title{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:1px;color:var(--blue-dark);display:flex;align-items:center;gap:10px;}
+.panel-sub{font-size:.84rem;color:var(--muted);margin-top:5px;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;box-shadow:var(--shadow);transition:.2s;}
+.stat-card:hover{transform:translateY(-3px);border-color:var(--blue);}
+.stat-card .snum{font-family:'Oswald',sans-serif;font-size:2.2rem;color:var(--blue);font-weight:700;line-height:1;}
+.stat-card .slbl{font-size:.78rem;color:var(--muted);margin-top:6px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:20px;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fg label{font-size:.82rem;color:var(--muted);font-weight:700;}
+.fg input,.fg select,.fg textarea{
+  background:var(--card-alt);border:1.5px solid var(--border);border-radius:10px;
+  padding:11px 14px;font-family:'Cairo',sans-serif;font-size:.95rem;
+  color:var(--text);outline:none;transition:.2s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.fg textarea{min-height:100px;resize:vertical;}
+.fg.full{grid-column:1/-1;}
+
+/* IMAGE UPLOAD */
+.img-upload-area{
+  border:2.5px dashed var(--border);border-radius:14px;
+  padding:28px;text-align:center;cursor:pointer;
+  transition:.2s;background:var(--card-alt);position:relative;
+}
+.img-upload-area:hover{border-color:var(--blue);background:rgba(21,101,192,.05);}
+.img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.img-upload-area .upload-icon{font-size:2.5rem;margin-bottom:8px;}
+.img-upload-area p{color:var(--muted);font-size:.87rem;font-weight:600;}
+.img-preview{width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:12px;display:none;border:2px solid var(--border);}
+
+/* BUTTONS */
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-dark));border:none;color:white;padding:12px 26px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(21,101,192,.3);}
+.btn-danger{background:var(--red);border:none;color:white;padding:7px 14px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s;}
+.btn-danger:hover{opacity:.8;}
+.btn-edit{background:var(--blue);border:none;color:white;padding:7px 14px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s;}
+.btn-edit:hover{opacity:.8;}
+.btn-secondary{background:var(--card-alt);border:1.5px solid var(--border);color:var(--text);padding:10px 22px;border-radius:9px;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:.2s;}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue);}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;margin-top:20px;font-size:.88rem;}
+.data-table th{background:var(--card-alt);padding:12px 14px;text-align:right;font-size:.8rem;color:var(--blue-dark);font-weight:700;border-bottom:2px solid var(--border);}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.data-table tr:hover td{background:rgba(21,101,192,.03);}
+.data-table td:last-child{white-space:nowrap;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:700;}
+.badge-blue{background:rgba(21,101,192,.1);color:var(--blue);}
+.badge-gray{background:rgba(98,120,160,.1);color:var(--muted);}
+.badge-green{background:rgba(46,125,50,.1);color:var(--green);}
+.badge-red{background:rgba(229,57,53,.1);color:var(--red);}
+
+/* TOGGLE */
+.toggle-row{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.toggle{position:relative;width:50px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:#c4cfe8;border-radius:30px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:20px;height:20px;background:white;border-radius:50%;left:3px;top:3px;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.2);}
+.toggle input:checked+.toggle-slider{background:var(--blue);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(24px);}
+.toggle-lbl{font-weight:700;font-size:.93rem;}
+.toggle-desc{font-size:.78rem;color:var(--muted);margin-top:2px;}
+
+/* ARTICLE THUMB */
+.article-thumb{width:48px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+.article-thumb-ph{width:48px;height:42px;background:var(--card-alt);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+
+/* ALERT */
+.z-alert{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(140px);background:var(--blue);color:white;padding:14px 34px;border-radius:14px;font-weight:700;font-size:.95rem;z-index:99999;transition:.4s cubic-bezier(.23,1,.32,1);box-shadow:var(--shadow-lg);white-space:nowrap;}
+.z-alert.show{transform:translateX(-50%) translateY(0);}
+.z-alert.ok{background:#22c55e;}.z-alert.err{background:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="icon">🔐</div>
+    <h2>لوحة إدارة الزمالك</h2>
+    <p class="sub">أدخل بيانات الدخول للوصول للوحة التحكم</p>
+    <input id="l-user" type="text" placeholder="اسم المستخدم" autocomplete="off">
+    <input id="l-pw" type="password" placeholder="كلمة المرور">
+    <button class="login-btn" onclick="doLogin()">دخول ←</button>
+    <div class="login-err" id="login-err">❌ اسم المستخدم أو كلمة المرور غلط</div>
+    <p class="login-hint">افتراضي: <strong>admin</strong> / <strong>admin123</strong></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════════════ -->
+<div id="dashboard">
+
+  <!-- HEADER -->
+  <div class="dash-header">
+    <div class="dash-logo">🔵⬜ الزمالك <em>FC</em> — لوحة التحكم</div>
+    <div class="dash-header-btns">
+      <a href="index.html" target="_blank" class="dash-header-btn btn-white">🌐 عرض الموقع</a>
+      <button class="dash-header-btn btn-gold" onclick="logout()">خروج ✕</button>
+    </div>
+  </div>
+
+  <div class="dash-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <ul class="sidebar-menu">
+        <li><button class="active" onclick="switchPanel('overview',this)">📊 نظرة عامة</button></li>
+        <li><button onclick="switchPanel('matches',this)">📅 المباريات</button></li>
+        <li><button onclick="switchPanel('articles',this)">📰 الأخبار والمقالات</button></li>
+        <div class="sidebar-divider"></div>
+        <li><button onclick="switchPanel('ads',this)">📢 الإعلانات</button></li>
+        <li><button onclick="switchPanel('settings',this)">⚙️ إعدادات الموقع</button></li>
+        <div class="sidebar-divider"></div>
+        <li><a href="index.html" target="_blank">🏠 الرئيسية</a></li>
+        <li><a href="mawaid-almabaryat.html" target="_blank">📅 المباريات</a></li>
+        <li><a href="akhbar-wamaqalat.html" target="_blank">📰 الأخبار</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN -->
+    <div class="dash-main">
+
+      <!-- ══ OVERVIEW ══ -->
+      <div class="panel active" id="panel-overview">
+        <div class="panel-header">
+          <div class="panel-title">📊 نظرة عامة</div>
+          <div class="panel-sub">مرحباً بك في لوحة تحكم موقع الزمالك FC</div>
+        </div>
+
+        <div class="stat-grid" id="overview-stats"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:22px;">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--blue-dark);">📅 أحدث المباريات</h3>
+            <div id="recent-matches-list"></div>
+          </div>
+          <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:22px;">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--blue-dark);">📰 أحدث المقالات</h3>
+            <div id="recent-articles-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MATCHES ══ -->
+      <div class="panel" id="panel-matches">
+        <div class="panel-header">
+          <div class="panel-title">📅 إدارة المباريات</div>
+          <div class="panel-sub">أضف وعدّل مواعيد مباريات الزمالك في كل البطولات</div>
+        </div>
+
+        <!-- ADD FORM -->
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:28px;">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">➕ إضافة مباراة جديدة</h3>
+          <div class="form-grid">
+            <div class="fg">
+              <label>الفريق المضيف</label>
+              <input id="m-home" type="text" placeholder="الزمالك" value="الزمالك">
+            </div>
+            <div class="fg">
+              <label>رمز الفريق المضيف</label>
+              <input id="m-home-e" type="text" placeholder="🔵⬜" value="🔵⬜">
+            </div>
+            <div class="fg">
+              <label>الفريق الضيف</label>
+              <input id="m-away" type="text" placeholder="الأهلي">
+            </div>
+            <div class="fg">
+              <label>رمز الفريق الضيف</label>
+              <input id="m-away-e" type="text" placeholder="🔴">
+            </div>
+            <div class="fg">
+              <label>البطولة</label>
+              <select id="m-comp">
+                <option>دوري نايل</option>
+                <option>كأس مصر</option>
+                <option>بطولة أفريقيا</option>
+                <option>كأس السوبر</option>
+                <option>مباراة ودية</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>تاريخ المباراة</label>
+              <input id="m-date" type="date">
+            </div>
+            <div class="fg">
+              <label>توقيت المباراة</label>
+              <input id="m-time" type="time" value="19:00">
+            </div>
+            <div class="fg">
+              <label>النتيجة (اتركه فارغاً للمباريات القادمة)</label>
+              <input id="m-score" type="text" placeholder="2 - 1">
+            </div>
+            <div class="fg">
+              <label>الحالة</label>
+              <select id="m-status">
+                <option value="upcoming">⏳ قادمة</option>
+                <option value="done">✅ انتهت</option>
+                <option value="today">📅 اليوم</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="addMatch()">➕ إضافة المباراة</button>
+        </div>
+
+        <!-- TABLE -->
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th><th>المباراة</th><th>البطولة</th>
+                <th>التاريخ</th><th>الوقت</th><th>النتيجة</th>
+                <th>الحالة</th><th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="matches-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ ARTICLES ══ -->
+      <div class="panel" id="panel-articles">
+        <div class="panel-header">
+          <div class="panel-title">📰 إدارة الأخبار والمقالات</div>
+          <div class="panel-sub">أضف مقالاً مع صورة — سيتم إنشاء صفحة مستقلة له تلقائياً</div>
+        </div>
+
+        <!-- ADD FORM -->
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:28px;">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">✏️ إضافة مقال / خبر جديد</h3>
+          <div class="form-grid">
+            <div class="fg full">
+              <label>عنوان المقال</label>
+              <input id="a-title" type="text" placeholder="عنوان الخبر أو المقال...">
+            </div>
+            <div class="fg full">
+              <label>ملخص قصير (يظهر في قائمة الأخبار)</label>
+              <input id="a-excerpt" type="text" placeholder="ملخص مختصر للمقال...">
+            </div>
+            <div class="fg">
+              <label>التصنيف</label>
+              <select id="a-cat">
+                <option>دوري نايل</option>
+                <option>كأس مصر</option>
+                <option>أفريقيا</option>
+                <option>الفريق</option>
+                <option>انتقالات</option>
+                <option>تقرير مباراة</option>
+                <option>أخبار عامة</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>الرمز التعبيري (يظهر إن لم تُضف صورة)</label>
+              <input id="a-emoji" type="text" placeholder="⚽ 🏆 🔵">
+            </div>
+            <div class="fg">
+              <label>الكاتب</label>
+              <input id="a-author" type="text" placeholder="إدارة الموقع" value="إدارة الموقع">
+            </div>
+            <div class="fg">
+              <label>الوسوم (مفصولة بفواصل)</label>
+              <input id="a-tags" type="text" placeholder="الزمالك, مباريات, ...">
+            </div>
+
+            <!-- IMAGE UPLOAD -->
+            <div class="fg full">
+              <label>📷 صورة المقال (اختياري)</label>
+              <div class="img-upload-area" id="upload-area">
+                <input type="file" accept="image/*" id="img-file" onchange="handleImageUpload(this)">
+                <div class="upload-icon">📷</div>
+                <p>اسحب وأفلت الصورة هنا أو اضغط للاختيار</p>
+                <p style="font-size:.75rem;color:var(--muted);margin-top:4px;">PNG, JPG, WEBP — حد أقصى 4MB</p>
+                <img id="img-preview" class="img-preview" alt="معاينة الصورة">
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                <button type="button" class="btn-secondary" style="padding:7px 16px;font-size:.82rem;" onclick="clearImage()">🗑 حذف الصورة</button>
+                <span id="img-status" style="font-size:.8rem;color:var(--muted);"></span>
+              </div>
+            </div>
+
+            <!-- CONTENT EDITOR -->
+            <div class="fg full">
+              <label>محتوى المقال الكامل (HTML مسموح)</label>
+              <textarea id="a-content" style="min-height:180px;" placeholder="اكتب محتوى المقال هنا... يمكنك استخدام HTML: &lt;p&gt; &lt;h2&gt; &lt;blockquote&gt;"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-primary" onclick="addArticle()">🚀 نشر المقال وإنشاء الصفحة</button>
+            <span style="font-size:.8rem;color:var(--muted);">سيتم إنشاء رابط مستقل للمقال تلقائياً</span>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>الصورة</th><th>العنوان</th><th>التصنيف</th><th>التاريخ</th><th>الرابط</th><th>إجراء</th></tr>
+            </thead>
+            <tbody id="articles-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ ADS ══ -->
+      <div class="panel" id="panel-ads">
+        <div class="panel-header">
+          <div class="panel-title">📢 إدارة الإعلانات</div>
+          <div class="panel-sub">أضف كود AdSense أو أي شبكة إعلانية في أي موضع</div>
+        </div>
+
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">➕ إضافة إعلان</h3>
+          <div class="form-grid">
+            <div class="fg">
+              <label>موضع الإعلان</label>
+              <select id="ad-pos">
+                <option>أعلى الصفحة</option>
+                <option>وسط الصفحة</option>
+                <option>أسفل الصفحة</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>حالة الإعلان</label>
+              <select id="ad-active">
+                <option value="1">✅ مفعّل</option>
+                <option value="0">⏸ موقوف</option>
+              </select>
+            </div>
+            <div class="fg full">
+              <label>كود الإعلان (HTML)</label>
+              <textarea id="ad-code" style="min-height:100px;font-family:monospace;font-size:.85rem;" placeholder='<ins class="adsbygoogle" ...'></textarea>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="addAd()">➕ إضافة الإعلان</button>
+        </div>
+
+        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>الموضع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody id="ads-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div class="panel" id="panel-settings">
+        <div class="panel-header">
+          <div class="panel-title">⚙️ إعدادات الموقع</div>
+          <div class="panel-sub">تحكم في كل جوانب الموقع من هنا</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+          <!-- GENERAL -->
+          <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">🌐 الإعدادات العامة</h3>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div class="fg"><label>اسم الموقع</label><input id="s-name" type="text"></div>
+              <div class="fg"><label>وصف الموقع</label><input id="s-desc" type="text"></div>
+              <div class="fg"><label>نص شريط الأخبار المتحرك</label><input id="s-ticker" type="text"></div>
+            </div>
+          </div>
+
+          <!-- SECURITY -->
+          <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">🔐 الأمان</h3>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div class="fg"><label>كلمة المرور الجديدة للوحة التحكم</label><input id="s-pw" type="password" placeholder="اتركه فارغاً للإبقاء على الحالي"></div>
+              <div class="fg"><label>تأكيد كلمة المرور</label><input id="s-pw2" type="password" placeholder="أعد الكتابة"></div>
+            </div>
+            <div style="margin-top:10px;padding:10px 14px;background:var(--card-alt);border-radius:8px;font-size:.8rem;color:var(--muted);">
+              💡 كلمة المرور الافتراضية: <strong style="color:var(--blue)">admin123</strong>
+            </div>
+          </div>
+
+          <!-- VISIBILITY -->
+          <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px;grid-column:1/-1;">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--blue);">👁 إظهار وإخفاء الأقسام</h3>
+            <div class="toggle-row">
+              <label class="toggle"><input type="checkbox" id="t-ticker"><span class="toggle-slider"></span></label>
+              <div><div class="toggle-lbl">شريط الأخبار المتحرك</div><div class="toggle-desc">إظهار / إخفاء الشريط المتحرك في أعلى الصفحات</div></div>
+            </div>
+            <div class="toggle-row">
+              <label class="toggle"><input type="checkbox" id="t-matches"><span class="toggle-slider"></span></label>
+              <div><div class="toggle-lbl">قسم مواعيد المباريات</div><div class="toggle-desc">إظهار / إخفاء قسم المباريات في الصفحة الرئيسية</div></div>
+            </div>
+            <div class="toggle-row">
+              <label class="toggle"><input type="checkbox" id="t-news"><span class="toggle-slider"></span></label>
+              <div><div class="toggle-lbl">قسم الأخبار والمقالات</div><div class="toggle-desc">إظهار / إخفاء قسم الأخبار في الصفحة الرئيسية</div></div>
+            </div>
+            <div class="toggle-row">
+              <label class="toggle"><input type="checkbox" id="t-ads"><span class="toggle-slider"></span></label>
+              <div><div class="toggle-lbl">عرض الإعلانات</div><div class="toggle-desc">تفعيل / إيقاف عرض الإعلانات على الموقع كله</div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top:20px;">
+          <button class="btn-primary" onclick="saveSettings()">💾 حفظ كل الإعدادات</button>
+        </div>
+      </div>
+
+    </div><!-- /dash-main -->
+  </div><!-- /dash-layout -->
+</div><!-- /dashboard -->
+
+<div class="z-alert" id="z-alert"></div>
+
+<script src="js/data.js"></script>
+<script>
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+const ADMIN_USER = 'admin';
+let sessionActive = false;
+
+document.getElementById('l-pw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function doLogin() {
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pw').value.trim();
+  if (u === ADMIN_USER && p === DB.getAdminPw()) {
+    sessionActive = true;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    initDashboard();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+
+function logout() {
+  sessionActive = false;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('l-pw').value = '';
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function switchPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function initDashboard() {
+  renderOverview();
+  renderMatchesTable();
+  renderArticlesTable();
+  renderAdsTable();
+  loadSettings();
+}
+
+// ══════════════════════════════════════════
+//  OVERVIEW
+// ══════════════════════════════════════════
+function renderOverview() {
+  const matches  = DB.getMatches();
+  const articles = DB.getArticles();
+  const ads      = DB.getAds();
+  const upcoming = matches.filter(m => m.status==='upcoming').length;
+
+  document.getElementById('overview-stats').innerHTML = [
+    { num: matches.length,  lbl:'إجمالي المباريات', icon:'📅' },
+    { num: upcoming,        lbl:'مباريات قادمة',     icon:'⏳' },
+    { num: articles.length, lbl:'المقالات والأخبار', icon:'📰' },
+    { num: ads.filter(a=>a.active).length, lbl:'إعلانات مفعّلة', icon:'📢' },
+  ].map(c => `
+    <div class="stat-card">
+      <div style="font-size:1.6rem;margin-bottom:4px;">${c.icon}</div>
+      <div class="snum">${c.num}</div>
+      <div class="slbl">${c.lbl}</div>
+    </div>`).join('');
+
+  document.getElementById('recent-matches-list').innerHTML = matches.slice(0,4).map(m => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:.85rem;">
+      <span style="font-weight:700;">${m.home} vs ${m.away}</span>
+      <span style="color:var(--muted);">${m.date}</span>
+    </div>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">لا توجد مباريات</p>';
+
+  document.getElementById('recent-articles-list').innerHTML = articles.slice(0,4).map(a => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:.85rem;">
+      <span style="font-weight:700;">${a.title.substring(0,35)}${a.title.length>35?'...':''}</span>
+      <span style="color:var(--muted);">${a.date}</span>
+    </div>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">لا توجد مقالات</p>';
+}
+
+// ══════════════════════════════════════════
+//  MATCHES
+// ══════════════════════════════════════════
+function addMatch() {
+  const home = document.getElementById('m-home').value.trim();
+  const away = document.getElementById('m-away').value.trim();
+  if (!home || !away) { showAlert('❌ أدخل اسم الفريقين','err'); return; }
+
+  const match = {
+    id: DB.makeId('m'),
+    home, away,
+    homeEmoji: document.getElementById('m-home-e').value || '⚽',
+    awayEmoji: document.getElementById('m-away-e').value || '⚽',
+    competition: document.getElementById('m-comp').value,
+    date: document.getElementById('m-date').value || '—',
+    time: document.getElementById('m-time').value || '19:00',
+    score: document.getElementById('m-score').value.trim(),
+    status: document.getElementById('m-status').value,
+  };
+
+  const arr = DB.getMatches();
+  arr.unshift(match);
+  DB.saveMatches(arr);
+  renderMatchesTable();
+  renderOverview();
+  showAlert('✅ تمت إضافة المباراة!','ok');
+  ['m-home','m-away','m-home-e','m-away-e','m-score'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('m-home').value = 'الزمالك';
+  document.getElementById('m-home-e').value = '🔵⬜';
+}
+
+function deleteMatch(id) {
+  if (!confirm('هل تريد حذف هذه المباراة؟')) return;
+  DB.saveMatches(DB.getMatches().filter(m => m.id !== id));
+  renderMatchesTable();
+  renderOverview();
+  showAlert('🗑 تم حذف المباراة');
+}
+
+function renderMatchesTable() {
+  const matches = DB.getMatches();
+  const map = { upcoming:'badge-blue', done:'badge-gray', today:'badge-green' };
+  const lbl = { upcoming:'⏳ قادمة', done:'✅ انتهت', today:'📅 اليوم' };
+  document.getElementById('matches-tbody').innerHTML = matches.length
+    ? matches.map((m,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td style="font-weight:700;">${m.homeEmoji} ${m.home} <span style="color:var(--muted)">vs</span> ${m.awayEmoji} ${m.away}</td>
+        <td>${m.competition}</td>
+        <td>${m.date}</td>
+        <td>${m.time}</td>
+        <td>${m.score||'—'}</td>
+        <td><span class="badge ${map[m.status]||'badge-gray'}">${lbl[m.status]||m.status}</span></td>
+        <td>
+          <button class="btn-danger" onclick="deleteMatch('${m.id}')">🗑</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">لا توجد مباريات بعد</td></tr>';
+}
+
+// ══════════════════════════════════════════
+//  IMAGE UPLOAD
+// ══════════════════════════════════════════
+let currentImageData = null;
+
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) { showAlert('❌ حجم الصورة يتجاوز 4MB','err'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImageData = e.target.result;
+    const preview = document.getElementById('img-preview');
+    preview.src = currentImageData;
+    preview.style.display = 'block';
+    document.getElementById('upload-area').style.borderColor = 'var(--blue)';
+    document.getElementById('img-status').textContent = '✅ ' + file.name;
+    showAlert('✅ تم رفع الصورة','ok');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  currentImageData = null;
+  document.getElementById('img-file').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-preview').src = '';
+  document.getElementById('upload-area').style.borderColor = '';
+  document.getElementById('img-status').textContent = '';
+}
+
+// ══════════════════════════════════════════
+//  ARTICLES
+// ══════════════════════════════════════════
+function addArticle() {
+  const title = document.getElementById('a-title').value.trim();
+  const content = document.getElementById('a-content').value.trim();
+  if (!title) { showAlert('❌ أدخل عنوان المقال','err'); return; }
+  if (!content) { showAlert('❌ أدخل محتوى المقال','err'); return; }
+
+  const tagsRaw = document.getElementById('a-tags').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t=>t.trim()).filter(Boolean) : ['الزمالك'];
+
+  const now = new Date();
+  const dateISO = now.toISOString().split('T')[0];
+  const dateAr  = now.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+
+  const article = {
+    id:      DB.makeId('a'),
+    slug:    DB.slugify(title),
+    title,
+    excerpt: document.getElementById('a-excerpt').value.trim() || title.substring(0,100),
+    content,
+    cat:     document.getElementById('a-cat').value,
+    emoji:   document.getElementById('a-emoji').value || '📰',
+    imageData: currentImageData,
+    date:    dateAr,
+    dateISO,
+    tags,
+    author: document.getElementById('a-author').value.trim() || 'إدارة الموقع',
+  };
+
+  // Save article
+  const arr = DB.getArticles();
+  arr.unshift(article);
+  DB.saveArticles(arr);
+
+  // Auto-generate article page key
+  DB.generateArticlePage(article);
+
+  renderArticlesTable();
+  renderOverview();
+
+  // Clear form
+  ['a-title','a-excerpt','a-content','a-tags','a-emoji'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  clearImage();
+
+  showAlert('🚀 تم نشر المقال وإنشاء الصفحة!','ok');
+}
+
+function deleteArticle(id) {
+  if (!confirm('هل تريد حذف هذا المقال؟')) return;
+  const arr = DB.getArticles();
+  const a = arr.find(x=>x.id===id);
+  if (a) {
+    localStorage.removeItem('zm_article_' + a.slug);
+  }
+  DB.saveArticles(arr.filter(x=>x.id!==id));
+  renderArticlesTable();
+  renderOverview();
+  showAlert('🗑 تم حذف المقال');
+}
+
+function renderArticlesTable() {
+  const arts = DB.getArticles();
+  document.getElementById('articles-tbody').innerHTML = arts.length
+    ? arts.map((a,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>
+          ${a.imageData
+            ? `<img class="article-thumb" src="${a.imageData}" alt="">`
+            : `<div class="article-thumb-ph">${a.emoji}</div>`}
+        </td>
+        <td style="font-weight:700;max-width:260px;">${a.title.substring(0,50)}${a.title.length>50?'...':''}</td>
+        <td><span class="badge badge-blue">${a.cat}</span></td>
+        <td style="color:var(--muted);font-size:.82rem;">${a.date}</td>
+        <td>
+          <a href="maqal.html?slug=${encodeURIComponent(a.slug)}" target="_blank"
+             style="color:var(--blue);font-size:.8rem;font-weight:700;text-decoration:none;">
+            🔗 عرض
+          </a>
+        </td>
+        <td>
+          <button class="btn-danger" onclick="deleteArticle('${a.id}')">🗑</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">لا توجد مقالات بعد</td></tr>';
+}
+
+// ══════════════════════════════════════════
+//  ADS
+// ══════════════════════════════════════════
+function addAd() {
+  const code = document.getElementById('ad-code').value.trim();
+  if (!code) { showAlert('❌ أدخل كود الإعلان','err'); return; }
+  const ad = {
+    id: DB.makeId('ad'),
+    position: document.getElementById('ad-pos').value,
+    code,
+    active: document.getElementById('ad-active').value === '1',
+  };
+  const arr = DB.getAds();
+  arr.push(ad);
+  DB.saveAds(arr);
+  renderAdsTable();
+  document.getElementById('ad-code').value = '';
+  showAlert('✅ تمت إضافة الإعلان','ok');
+}
+
+function deleteAd(id) {
+  DB.saveAds(DB.getAds().filter(a=>a.id!==id));
+  renderAdsTable();
+  showAlert('🗑 تم حذف الإعلان');
+}
+
+function toggleAd(id) {
+  const arr = DB.getAds();
+  const a = arr.find(x=>x.id===id);
+  if (a) a.active = !a.active;
+  DB.saveAds(arr);
+  renderAdsTable();
+}
+
+function renderAdsTable() {
+  const ads = DB.getAds();
+  document.getElementById('ads-tbody').innerHTML = ads.length
+    ? ads.map((a,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td style="font-weight:700;">${a.position}</td>
+        <td>
+          <span class="badge ${a.active?'badge-green':'badge-gray'}">${a.active?'✅ مفعّل':'⏸ موقوف'}</span>
+        </td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn-edit" onclick="toggleAd('${a.id}')">${a.active?'إيقاف':'تفعيل'}</button>
+          <button class="btn-danger" onclick="deleteAd('${a.id}')">🗑</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:30px;">لا توجد إعلانات بعد</td></tr>';
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function loadSettings() {
+  const s = DB.getSettings();
+  document.getElementById('s-name').value   = s.siteName;
+  document.getElementById('s-desc').value   = s.siteDesc;
+  document.getElementById('s-ticker').value = s.tickerText || '';
+  document.getElementById('t-ticker').checked  = !!s.ticker;
+  document.getElementById('t-matches').checked = !!s.showMatches;
+  document.getElementById('t-news').checked    = !!s.showNews;
+  document.getElementById('t-ads').checked     = !!s.showAds;
+}
+
+function saveSettings() {
+  const pw  = document.getElementById('s-pw').value.trim();
+  const pw2 = document.getElementById('s-pw2').value.trim();
+  if (pw && pw !== pw2) { showAlert('❌ كلمتا المرور غير متطابقتين','err'); return; }
+  if (pw) DB.saveAdminPw(pw);
+
+  DB.saveSettings({
+    siteName:    document.getElementById('s-name').value.trim()   || 'الزمالك',
+    siteDesc:    document.getElementById('s-desc').value.trim()   || '',
+    tickerText:  document.getElementById('s-ticker').value.trim() || '',
+    ticker:      document.getElementById('t-ticker').checked,
+    showMatches: document.getElementById('t-matches').checked,
+    showNews:    document.getElementById('t-news').checked,
+    showAds:     document.getElementById('t-ads').checked,
+    accentColor: '#1565c0',
+  });
+
+  showAlert('✅ تم حفظ الإعدادات بنجاح!','ok');
+  document.getElementById('s-pw').value = '';
+  document.getElementById('s-pw2').value = '';
+}
+
+// ══════════════════════════════════════════
+//  ALERT
+// ══════════════════════════════════════════
+function showAlert(msg, type='') {
+  const el = document.getElementById('z-alert');
+  el.textContent = msg;
+  el.className = 'z-alert ' + type;
+  el.classList.add('show');
+  clearTimeout(window._at);
+  window._at = setTimeout(() => el.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>

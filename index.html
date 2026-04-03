@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>الزمالك FC — الصفحة الرئيسية</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div id="navbar-mount"></div>
+
+<!-- TICKER -->
+<div class="ticker-wrap" id="ticker-wrap">
+  <div class="ticker-track" id="ticker-track">جاري التحميل...</div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-pattern"></div>
+  <div class="hero-badge">🔵⬜ القلعة البيضاء — منذ 1911</div>
+  <h1>نادي <em>الزمالك</em><br>القلعة البيضاء</h1>
+  <p>أحدث أخبار الفريق • مواعيد المباريات • كل شيء عن الزمالك في مكان واحد</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num" id="stat-titles">13</div><div class="lbl">🏆 لقب أفريقي</div></div>
+    <div class="hero-stat"><div class="num" id="stat-leagues">28</div><div class="lbl">🥇 دوري مصري</div></div>
+    <div class="hero-stat"><div class="num" id="stat-cups">28</div><div class="lbl">🥈 كأس مصر</div></div>
+    <div class="hero-stat"><div class="num" id="stat-next">—</div><div class="lbl">📅 أيام للمباراة القادمة</div></div>
+  </div>
+</section>
+
+<!-- AD TOP -->
+<div style="padding:20px 0 0;" id="ad-top-mount"></div>
+
+<!-- MATCHES SECTION -->
+<section class="section" id="section-matches">
+  <div class="section-header">
+    <h2 class="section-title"><span class="bar"></span>مواعيد المباريات</h2>
+    <a href="mawaid-almabaryat.html" class="see-all">كل المباريات ←</a>
+  </div>
+  <div class="matches-grid" id="home-matches-grid"></div>
+</section>
+
+<!-- AD MID -->
+<div id="ad-mid-mount"></div>
+
+<!-- NEWS SECTION -->
+<section class="section" id="section-news">
+  <div class="section-header">
+    <h2 class="section-title"><span class="bar"></span>آخر الأخبار والمقالات</h2>
+    <a href="akhbar-wamaqalat.html" class="see-all">كل الأخبار ←</a>
+  </div>
+  <div class="news-grid" id="home-news-grid"></div>
+</section>
+
+<!-- FOOTER -->
+<div id="footer-mount"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Navbar
+  document.getElementById('navbar-mount').innerHTML = renderNavbar('home');
+  // Footer
+  document.getElementById('footer-mount').innerHTML = renderFooterHTML();
+  // Ads
+  document.getElementById('ad-top-mount').innerHTML = renderAdZone('أعلى الصفحة');
+  document.getElementById('ad-mid-mount').innerHTML = renderAdZone('وسط الصفحة');
+
+  const s = DB.getSettings();
+
+  // Sections visibility
+  document.getElementById('section-matches').style.display = s.showMatches ? '' : 'none';
+  document.getElementById('section-news').style.display    = s.showNews    ? '' : 'none';
+
+  // ── MATCHES ──
+  const matches = DB.getMatches().slice(0, 6);
+  const grid = document.getElementById('home-matches-grid');
+  if (!matches.length) {
+    grid.innerHTML = '<p style="color:var(--muted);padding:20px 0;">لا توجد مباريات حالياً</p>';
+  } else {
+    grid.innerHTML = matches.map(m => matchCardHTML(m)).join('');
+  }
+
+  // ── NEXT MATCH COUNTDOWN ──
+  const upcoming = DB.getMatches().filter(m => m.status === 'upcoming').sort((a,b) => a.date.localeCompare(b.date));
+  if (upcoming.length) {
+    const diff = Math.ceil((new Date(upcoming[0].date) - new Date()) / 86400000);
+    document.getElementById('stat-next').textContent = diff > 0 ? diff : 'اليوم';
+  }
+
+  // ── NEWS ──
+  const articles = DB.getArticles();
+  const newsGrid = document.getElementById('home-news-grid');
+  if (!articles.length) {
+    newsGrid.innerHTML = '<p style="color:var(--muted);">لا توجد أخبار حالياً</p>';
+    return;
+  }
+  const main = articles[0];
+  const side = articles.slice(1, 5);
+  newsGrid.innerHTML = `
+    <a class="news-main" href="maqal.html?slug=${main.slug}">
+      ${main.imageData
+        ? `<img class="news-main-img" src="${main.imageData}" alt="${main.title}">`
+        : `<div class="news-main-placeholder">${main.emoji}</div>`}
+      <div class="news-main-body">
+        <span class="news-cat">${main.cat}</span>
+        <div class="news-main-title">${main.title}</div>
+        <div class="news-main-excerpt">${main.excerpt}</div>
+        <div class="news-main-meta">
+          <span>📅 ${main.date}</span>
+          <span>✍️ ${main.author}</span>
+        </div>
+        <div class="news-read-more">اقرأ المقال كاملاً ←</div>
+      </div>
+    </a>
+    <div class="news-sidebar">
+      ${side.map(a => `
+        <a class="news-mini" href="maqal.html?slug=${a.slug}">
+          ${a.imageData
+            ? `<img class="news-mini-img" src="${a.imageData}" alt="${a.title}">`
+            : `<div class="news-mini-placeholder">${a.emoji}</div>`}
+          <div class="news-mini-body">
+            <div class="news-mini-title">${a.title}</div>
+            <div class="news-mini-date">📅 ${a.date}</div>
+          </div>
+        </a>`).join('')}
+    </div>`;
+});
+
+function matchCardHTML(m) {
+  const isZamalek = n => n.includes('الزمالك');
+  const badgeMap = { upcoming:'badge-upcoming', done:'badge-done', today:'badge-today' };
+  const labelMap = { upcoming:'⏳ قادمة', done:'✅ انتهت', today:'📅 اليوم' };
+  const badgeCls = badgeMap[m.status] || 'badge-upcoming';
+  const badgeLbl = labelMap[m.status] || m.status;
+  return `
+  <div class="match-card">
+    <div class="match-top">
+      <span class="match-competition">${m.competition}</span>
+      <span class="badge ${badgeCls}">${badgeLbl}</span>
+    </div>
+    <div class="match-body">
+      <div class="match-team">
+        <span class="match-team-emoji">${m.homeEmoji}</span>
+        <div class="match-team-name ${isZamalek(m.home)?'zm':''}">${m.home}</div>
+      </div>
+      <div class="match-vs-box">
+        <div class="match-score-box">${m.score || 'VS'}</div>
+        <div class="match-time-txt">${m.time}</div>
+      </div>
+      <div class="match-team">
+        <span class="match-team-emoji">${m.awayEmoji}</span>
+        <div class="match-team-name ${isZamalek(m.away)?'zm':''}">${m.away}</div>
+      </div>
+    </div>
+    <div class="match-footer">📅 ${m.date}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>

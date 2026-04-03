@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>الأخبار والمقالات — الزمالك FC</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="navbar-mount"></div>
+
+<div class="ticker-wrap" id="ticker-wrap">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="page-banner">
+  <h1>الأخبار <span>والمقالات</span></h1>
+  <p>آخر أخبار القلعة البيضاء وتقارير المباريات</p>
+</div>
+
+<div class="breadcrumb">
+  <a href="index.html">الرئيسية</a>
+  <span class="sep">›</span>
+  <span>الأخبار والمقالات</span>
+</div>
+
+<div id="ad-top-mount" style="padding:0 24px 0;"></div>
+
+<div class="section">
+
+  <!-- CATEGORY FILTER -->
+  <div class="filter-row" id="cat-filters">
+    <button class="filter-btn active" onclick="filterCat('all',this)">📋 الكل</button>
+  </div>
+
+  <!-- GRID -->
+  <div class="all-news-grid" id="news-grid"></div>
+
+</div>
+
+<div id="footer-mount"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+let allArticles = [];
+let currentCat = 'all';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navbar-mount').innerHTML = renderNavbar('news');
+  document.getElementById('footer-mount').innerHTML = renderFooterHTML();
+  document.getElementById('ad-top-mount').innerHTML = renderAdZone('أعلى الصفحة');
+
+  allArticles = DB.getArticles();
+  buildCatFilters();
+  renderArticles('all');
+});
+
+function buildCatFilters() {
+  const cats = [...new Set(allArticles.map(a => a.cat))];
+  const row = document.getElementById('cat-filters');
+  cats.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = c;
+    btn.onclick = () => filterCat(c, btn);
+    row.appendChild(btn);
+  });
+}
+
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderArticles(cat);
+}
+
+function renderArticles(cat) {
+  const list = cat === 'all' ? allArticles : allArticles.filter(a => a.cat === cat);
+  const grid = document.getElementById('news-grid');
+  if (!list.length) { grid.innerHTML = '<p style="color:var(--muted);padding:30px 0;">لا توجد مقالات في هذا التصنيف</p>'; return; }
+  grid.innerHTML = list.map(a => `
+    <a class="news-card" href="maqal.html?slug=${encodeURIComponent(a.slug)}">
+      ${a.imageData
+        ? `<img class="news-card-img" src="${a.imageData}" alt="${a.title}">`
+        : `<div class="news-card-placeholder">${a.emoji}</div>`}
+      <div class="news-card-body">
+        <span class="news-cat">${a.cat}</span>
+        <div class="news-card-title">${a.title}</div>
+        <div class="news-card-excerpt">${a.excerpt}</div>
+        <div class="news-card-meta">📅 ${a.date} &nbsp;|&nbsp; ✍️ ${a.author}</div>
+      </div>
+    </a>`).join('');
+}
+</script>
+</body>
+</html>
